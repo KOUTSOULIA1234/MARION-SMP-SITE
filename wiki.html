@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SMP Wiki — Single File</title>
+  <meta name="description" content="Simple, single-file SMP Wiki template (HTML/CSS/JS)" />
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#60a5fa; --glass: rgba(255,255,255,0.03);
+      --radius:14px; --gap:18px; color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial; background:linear-gradient(180deg,#071026 0%, #081223 80%); color:#e6eef8}
+    header{display:flex;align-items:center;gap:16px;padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.03);backdrop-filter:blur(6px)}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo .mark{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .title{font-weight:700;font-size:18px}
+
+    .searchbar{margin-left:8px;flex:1;display:flex;gap:8px}
+    .searchbar input{flex:1;padding:10px 14px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:inherit}
+    .top-actions{display:flex;gap:8px}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:10px;color:inherit;cursor:pointer}
+
+    .container{display:grid;grid-template-columns:260px 1fr;gap:20px;padding:20px}
+    nav.side{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:14px;border-radius:12px;height:calc(100vh - 120px);position:sticky;top:72px;overflow:auto}
+    .side h3{margin:4px 0 12px 0;font-size:13px;color:var(--muted)}
+    .filters{display:flex;flex-direction:column;gap:8px}
+    .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);font-size:13px}
+
+    main{min-height:70vh}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:10px}
+    .card h4{margin:0;font-size:16px}
+    .card .meta{font-size:13px;color:var(--muted)}
+    .controls{display:flex;gap:8px;margin-top:auto}
+
+    .hero{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+    .hero h2{margin:0}
+
+    .article{background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+    .article h1{margin-top:0}
+
+    footer{padding:20px;color:var(--muted);font-size:13px}
+
+    /* responsive */
+    @media (max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.container{grid-template-columns:1fr}}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}.searchbar{width:100%}}
+
+    /* small helpers */
+    .hidden{display:none}
+    .pill{padding:6px 10px;border-radius:999px;background:rgba(0,0,0,0.2);font-size:12px}
+    textarea{width:100%;min-height:140px;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit}
+    input[type=text]{padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),#3b82f6);border:none;color:#04203a}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="mark">S</div>
+      <div>
+        <div class="title">SMP Wiki</div>
+        <div style="font-size:12px;color:var(--muted)">A simple single-file wiki for your SMP</div>
+      </div>
+    </div>
+
+    <div class="searchbar">
+      <input id="q" type="search" placeholder="Search pages, tags, content..." />
+      <div class="top-actions">
+        <button id="newPageBtn">+ New</button>
+        <button id="darkToggle">🌓</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <nav class="side">
+      <div class="hero">
+        <div>
+          <h3>Browse</h3>
+          <div style="color:var(--muted);font-size:13px">Filter by category or tag, or use search.</div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div>
+          <h3>Categories</h3>
+          <div id="categoryList"></div>
+        </div>
+        <div>
+          <h3>Popular tags</h3>
+          <div id="tagList"></div>
+        </div>
+        <div style="margin-top:12px">
+          <h3>Sort</h3>
+          <select id="sortBy" style="width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04)">
+            <option value="updated">Recently updated</option>
+            <option value="created">Recently created</option>
+            <option value="alpha">A → Z</option>
+          </select>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <section class="article" id="listView">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h2>All pages</h2>
+          <div style="color:var(--muted);font-size:13px" id="count">0 pages</div>
+        </div>
+        <div class="grid" id="pageGrid"></div>
+      </section>
+
+      <section class="article hidden" id="pageView">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div>
+            <h1 id="pageTitle"></h1>
+            <div id="pageMeta" style="color:var(--muted);font-size:13px"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="backBtn">◀ Back</button>
+            <button id="editBtn" class="btn-primary">Edit</button>
+          </div>
+        </div>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
+        <div id="pageContent"></div>
+
+        <div id="editor" class="hidden" style="margin-top:12px">
+          <input id="editTitle" type="text" placeholder="Title" />
+          <div style="margin-top:8px">
+            <input id="editTags" type="text" placeholder="tags (comma separated)" />
+          </div>
+          <div style="margin-top:8px">
+            <textarea id="editBody" placeholder="Write markdown-style content here..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="saveBtn" class="btn-primary">Save</button>
+            <button id="cancelEdit">Cancel</button>
+            <button id="deleteBtn" style="background:#7f1d1d">Delete</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    Tip: This stores content locally in your browser (localStorage). Export/backup by copying the JSON from the settings if needed.
+  </footer>
+
+  <script>
+    // -- Sample data and storage
+    const STORAGE_KEY = 'smp_wiki_pages_v1';
+    const sample = [
+      {id:uid(),title:'Spawn & Hub',tags:['spawn','hub'],category:'Locations',body:'**Spawn** is the main hub. Add warps & rules here.',created:+new Date()-86400000*5,updated:+new Date()-86400000*1},
+      {id:uid(),title:'Rules',tags:['rules','server'],category:'Administration',body:'1. No griefing\n2. Be respectful\n3. No hacks',created:+new Date()-86400000*20,updated:+new Date()-86400000*2},
+      {id:uid(),title:'Economy',tags:['money','shop'],category:'Systems',body:'Economy uses /shop and a currency called `coins`.',created:+new Date()-86400000*30,updated:+new Date()-86400000*3}
+    ];
+
+    function uid(){return 'p_'+Math.random().toString(36).slice(2,9)}
+
+    function loadPages(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw){ localStorage.setItem(STORAGE_KEY, JSON.stringify(sample)); return sample.slice(); }
+      try{ return JSON.parse(raw) } catch(e){ console.error(e); localStorage.removeItem(STORAGE_KEY); localStorage.setItem(STORAGE_KEY, JSON.stringify(sample)); return sample.slice(); }
+    }
+    function savePages(p){ localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+
+    // -- app state
+    let pages = loadPages();
+    let current = null;
+
+    // -- elements
+    const pageGrid = document.getElementById('pageGrid');
+    const countEl = document.getElementById('count');
+    const q = document.getElementById('q');
+    const tagList = document.getElementById('tagList');
+    const categoryList = document.getElementById('categoryList');
+    const sortBy = document.getElementById('sortBy');
+    const listView = document.getElementById('listView');
+    const pageView = document.getElementById('pageView');
+    const pageTitle = document.getElementById('pageTitle');
+    const pageMeta = document.getElementById('pageMeta');
+    const pageContent = document.getElementById('pageContent');
+    const backBtn = document.getElementById('backBtn');
+    const editBtn = document.getElementById('editBtn');
+    const editor = document.getElementById('editor');
+    const editTitle = document.getElementById('editTitle');
+    const editTags = document.getElementById('editTags');
+    const editBody = document.getElementById('editBody');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelEdit = document.getElementById('cancelEdit');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const newPageBtn = document.getElementById('newPageBtn');
+    const darkToggle = document.getElementById('darkToggle');
+
+    // -- render helpers
+    function renderList(){
+      const qv = q.value.trim().toLowerCase();
+      const sort = sortBy.value;
+      let list = pages.filter(p => {
+        if(!qv) return true;
+        return (p.title||'').toLowerCase().includes(qv) || (p.tags||[]).join(' ').toLowerCase().includes(qv) || (p.body||'').toLowerCase().includes(qv)
+      });
+
+      if(sort==='updated') list.sort((a,b)=>b.updated-a.updated);
+      if(sort==='created') list.sort((a,b)=>b.created-b.created? b.created-a.created : b.updated-a.updated);
+      if(sort==='alpha') list.sort((a,b)=> (a.title||'').localeCompare(b.title||''));
+
+      pageGrid.innerHTML='';
+      list.forEach(p=>{
+        const el = document.createElement('div'); el.className='card';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start"><h4>${escapeHtml(p.title)}</h4><div class="pill">${(p.category||'General')}</div></div>
+          <div class="meta">${escapeHtml((p.tags||[]).join(', '))} • ${new Date(p.updated).toLocaleDateString()}</div>
+          <div style="color:var(--muted);font-size:14px">${truncate(stripMd(p.body||''),120)}</div>
+          <div class="controls"><button onclick="viewPage('${p.id}')">Open</button><button onclick="startEdit('${p.id}')">Edit</button></div>`;
+        pageGrid.appendChild(el);
+      });
+      countEl.textContent = `${list.length} page${list.length===1?'':'s'}`;
+      renderTagsAndCategories();
+    }
+
+    function renderTagsAndCategories(){
+      const tags = {};
+      const cats = {};
+      pages.forEach(p=>{ (p.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1); cats[p.category||'General']=(cats[p.category||'General']||0)+1 });
+      tagList.innerHTML = Object.keys(tags).sort((a,b)=>tags[b]-tags[a]).slice(0,20).map(t=>`<button class="tag" onclick="filterByTag('${t}')">${t} (${tags[t]})</button>`).join(' ');
+      categoryList.innerHTML = Object.keys(cats).map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span>${c}</span><span style="color:var(--muted)">${cats[c]}</span></div>`).join('');
+    }
+
+    // -- view / edit
+    window.viewPage = function(id){
+      const p = pages.find(x=>x.id===id);
+      if(!p) return alert('Page not found');
+      current = p.id;
+      pageTitle.textContent = p.title;
+      pageMeta.textContent = `${p.category||'General'} • ${p.tags? p.tags.join(', '):''} • Updated ${new Date(p.updated).toLocaleString()}`;
+      pageContent.innerHTML = renderMarkdown(p.body||'');
+      listView.classList.add('hidden'); pageView.classList.remove('hidden'); editor.classList.add('hidden');
+    }
+
+    backBtn.addEventListener('click',()=>{ current=null; listView.classList.remove('hidden'); pageView.classList.add('hidden'); renderList(); });
+
+    function startEdit(id){
+      const p = pages.find(x=>x.id===id);
+      if(!p) return alert('Page not found');
+      current = p.id; pageView.classList.remove('hidden'); listView.classList.add('hidden');
+      pageTitle.textContent = p.title; pageMeta.textContent = `${p.category||'General'} • ${p.tags? p.tags.join(', '):''}`;
+      pageContent.innerHTML = renderMarkdown(p.body||'');
+      editor.classList.remove('hidden'); editTitle.value = p.title; editTags.value = (p.tags||[]).join(', '); editBody.value = p.body||'';
+    }
+
+    editBtn.addEventListener('click',()=>{ if(!current) return; startEdit(current); });
+    newPageBtn.addEventListener('click',()=>{
+      const p = {id:uid(),title:'New Page',tags:[],category:'General',body:'Write your content here...',created:+new Date(),updated:+new Date()};
+      pages.unshift(p); savePages(pages); startEdit(p.id); renderList();
+    });
+
+    saveBtn.addEventListener('click',()=>{
+      if(!current) return; const p = pages.find(x=>x.id===current); if(!p) return;
+      p.title = editTitle.value.trim() || 'Untitled';
+      p.tags = editTags.value.split(',').map(s=>s.trim()).filter(Boolean);
+      p.body = editBody.value; p.updated = +new Date(); savePages(pages); editor.classList.add('hidden'); pageContent.innerHTML = renderMarkdown(p.body); pageTitle.textContent = p.title; renderList();
+    });
+
+    cancelEdit.addEventListener('click',()=>{ editor.classList.add('hidden'); if(current) viewPage(current); else { listView.classList.remove('hidden'); pageView.classList.add('hidden'); } });
+    deleteBtn.addEventListener('click',()=>{
+      if(!current) return; if(!confirm('Delete this page?')) return; pages = pages.filter(x=>x.id!==current); savePages(pages); current=null; listView.classList.remove('hidden'); pageView.classList.add('hidden'); renderList();
+    });
+
+    // -- utilities
+    function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function truncate(s,n){ return s.length>n? s.slice(0,n-1)+'…': s }
+    function stripMd(s){ return s.replace(/[#*_`>\-\[\]]/g,''); }
+
+    function renderMarkdown(md){
+      if(!md) return '<div style="color:var(--muted)">No content.</div>';
+      // minimal markdown-like renderer: headings, bold, italics, code, lists, paragraphs
+      let html = md
+        .replace(/\n{2,}/g,'\n\n')
+        .split('\n\n').map(block=>{
+          if(/^#\s/.test(block)) return '<h2>'+escapeHtml(block.replace(/^#\s/,'').trim())+'</h2>';
+          if(/^##\s/.test(block)) return '<h3>'+escapeHtml(block.replace(/^##\s/,'').trim())+'</h3>';
+          if(/^\d+\.\s/.test(block) || /^-\s/.test(block)){
+            const items = block.split('\n').map(l=>'<li>'+escapeHtml(l.replace(/^\d+\.\s|^-\s/,'').trim())+'</li>').join('');
+            return '<ul>'+items+'</ul>';
+          }
+          // inline
+          let out = escapeHtml(block).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>');
+          return '<p>'+out.replace(/\n/g,'<br/>')+'</p>';
+        }).join('');
+      return html;
+    }
+
+    // filtering via tag
+    window.filterByTag = function(t){ q.value = t; renderList(); }
+
+    // start
+    q.addEventListener('input', ()=>renderList()); sortBy.addEventListener('change', renderList);
+    renderList();
+
+    // small keyboard nav: Enter on search opens first
+    q.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ const first = pages.find(p => (p.title||'').toLowerCase().includes(q.value.toLowerCase()) || (p.tags||[]).join(' ').toLowerCase().includes(q.value.toLowerCase())); if(first) viewPage(first.id); } });
+
+    // dark mode toggle (simple)
+    darkToggle.addEventListener('click',()=>{
+      if(document.documentElement.style.getPropertyValue('--bg')===''){
+        document.documentElement.style.setProperty('--bg','#ffffff');
+      }
+      document.body.classList.toggle('light');
+      // trivial visual change: invert colors if light
+      if(document.body.classList.contains('light')){
+        document.documentElement.style.setProperty('--bg','#f8fafc'); document.documentElement.style.setProperty('--card','#ffffff'); document.documentElement.style.setProperty('--muted','#475569'); document.documentElement.style.setProperty('--accent','#06b6d4'); document.documentElement.style.setProperty('--glass','rgba(0,0,0,0.03)'); document.documentElement.style.setProperty('color-scheme','light');
+      } else {
+        document.documentElement.style.setProperty('--bg','#0f1724'); document.documentElement.style.setProperty('--card','#0b1220'); document.documentElement.style.setProperty('--muted','#9aa4b2'); document.documentElement.style.setProperty('--accent','#60a5fa'); document.documentElement.style.setProperty('--glass','rgba(255,255,255,0.03)'); document.documentElement.style.setProperty('color-scheme','dark');
+      }
+    });
+
+    // small helpers exposed for inline onclick above (avoid CSP issues)
+    window.startEdit = startEdit;
+
+    // persist initial sample on first load
+    if(!localStorage.getItem(STORAGE_KEY)) savePages(pages);
+  </script>
+</body>
+</html>
